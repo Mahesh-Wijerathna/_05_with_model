@@ -1,12 +1,17 @@
 version: '3.8'
 
 services:
-  # backend:
-  #   build: ./game-review-sentiment-backend
-  #   ports:
-  #     - "5000:5000"
-  #   volumes:
-  #     - ./game-review-sentiment-backend:/app
+  backend:
+    build: ./game-review-sentiment-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./game-review-sentiment-backend:/app
+    environment:
+      - FLASK_ENV=development
+    depends_on:
+      - hello-world
+
   # ngrok:
   #   image: ngrok/ngrok:latest
   #   ports:
@@ -17,8 +22,21 @@ services:
   
 
   hello-world:
-    image: alpine:latest
+    image: alpine:latest  
     command: echo "Hello World"
     
+  frontend:
+    build: ./game-review-sentiment
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./game-review-sentiment:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - backend
+    
 
+    
     

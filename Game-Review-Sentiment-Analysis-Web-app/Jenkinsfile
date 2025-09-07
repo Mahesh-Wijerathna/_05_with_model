@@ -52,18 +52,36 @@ pipeline {
             }
         }
 
+        stage('Build Frontend') {
+            steps {
+                echo 'Building frontend service...'
+                script {
+                    dir('Game-Review-Sentiment-Analysis-Web-app') {
+                        bat 'docker compose build frontend'
+                    }
+                }
+            }
+        }
+
+        stage('Test Frontend') {
+            steps {
+                echo 'Running frontend tests...'
+                script {
+                    dir('Game-Review-Sentiment-Analysis-Web-app') {
+                        // Run frontend tests inside the container
+                        bat 'docker compose run --rm frontend npm test -- --watchAll=false --passWithNoTests'
+                    }
+                }
+            }
+        }
+
         stage('Build Backend (Optional)') {
             steps {
-                echo 'Building backend service if uncommented...'
+                echo 'Building backend service...'
                 script {
                     // Change to the correct directory
                     dir('Game-Review-Sentiment-Analysis-Web-app') {
-                        def composeContent = readFile 'docker-compose.yml'
-                        if (composeContent.contains('backend:')) {
-                            bat 'docker compose build backend'
-                        } else {
-                            echo 'Backend service is commented out, skipping build'
-                        }
+                        bat 'docker compose build backend'
                     }
                 }
             }
@@ -72,10 +90,24 @@ pipeline {
         stage('Test Services') {
             steps {
                 echo 'Running basic service tests...'
-                // Change to the correct directory for tests
-                dir('Game-Review-Sentiment-Analysis-Web-app') {
-                    // Add your test commands here
-                    bat 'echo "Add your test commands here"'
+                script {
+                    dir('Game-Review-Sentiment-Analysis-Web-app') {
+                        // Start services in detached mode for testing
+                        bat 'docker compose up -d backend frontend'
+                        
+                        // Wait a moment for services to start
+                        bat 'timeout /t 15 /nobreak > nul'
+                        
+                        // Check if services are running
+                        bat 'docker compose ps'
+                        
+                        // Test hello-world service
+                        echo 'Testing hello-world service...'
+                        bat 'docker compose run --rm hello-world'
+                        
+                        // Stop services after testing
+                        bat 'docker compose down'
+                    }
                 }
             }
         }
