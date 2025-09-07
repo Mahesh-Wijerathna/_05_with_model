@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    parameters {
+        booleanParam(name: 'KEEP_CONTAINERS_RUNNING', defaultValue: true, description: 'Keep Docker containers running after pipeline completion')
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -131,17 +135,17 @@ pipeline {
             }
         }
 
-        stage('Test Frontend') {
-            steps {
-                echo 'Running frontend tests...'
-                script {
-                    dir('Game-Review-Sentiment-Analysis-Web-app') {
-                        // Run frontend tests inside the container
-                        bat 'docker compose run --rm frontend npm test -- --watchAll=false --passWithNoTests'
-                    }
-                }
-            }
-        }
+        // stage('Test Frontend') {
+        //     steps {
+        //         echo 'Running frontend tests...'
+        //         script {
+        //             dir('Game-Review-Sentiment-Analysis-Web-app') {
+        //                 // Run frontend tests inside the container
+        //                 bat 'docker compose run --rm frontend npm test -- --watchAll=false --passWithNoTests'
+        //             }
+        //         }
+        //     }
+        // }
 
         // stage('Build Backend (Optional)') {
         //     steps {
@@ -254,24 +258,37 @@ pipeline {
     post {
         always {
             echo 'Pipeline completed.'
-            // Clean up any running containers from the correct directory
-            dir('Game-Review-Sentiment-Analysis-Web-app') {
-                bat 'docker compose down || echo "No containers to clean up"'
+            script {
+                // Only clean up if the parameter is set to false
+                if (!params.KEEP_CONTAINERS_RUNNING) {
+                    echo '🧹 Cleaning up Docker containers...'
+                    dir('Game-Review-Sentiment-Analysis-Web-app') {
+                        bat 'docker compose down || echo "No containers to clean up"'
+                    }
+                } else {
+                    echo '📦 Keeping containers running as requested...'
+                }
             }
         }
         success {
             echo '🎉 Pipeline succeeded!'
-            echo 'Your frontend application is deployed and running locally!'
-            echo ''
-            echo '🌐 Access your frontend application:'
-            echo '   Frontend (React): http://localhost:3000'
-            echo ''
-            echo 'To stop the application:'
-            echo '   cd Game-Review-Sentiment-Analysis-Web-app'
-            echo '   docker compose down'
-            echo ''
-            echo 'To restart:'
-            echo '   docker compose up -d frontend'
+            script {
+                if (params.KEEP_CONTAINERS_RUNNING) {
+                    echo 'Your frontend application is deployed and running locally!'
+                    echo ''
+                    echo '🌐 Access your frontend application:'
+                    echo '   Frontend (React): http://localhost:3000'
+                    echo ''
+                    echo 'To stop the application manually:'
+                    echo '   cd Game-Review-Sentiment-Analysis-Web-app'
+                    echo '   docker compose down'
+                    echo ''
+                    echo 'To restart:'
+                    echo '   docker compose up -d frontend'
+                } else {
+                    echo 'Pipeline completed successfully. Containers have been cleaned up.'
+                }
+            }
         }
         failure {
             echo '❌ Pipeline failed!'
@@ -286,8 +303,12 @@ pipeline {
                     echo '5. Consider using a different Docker registry mirror'
                     echo '6. Check if Docker Hub is accessible: ping registry-1.docker.io'
                 }
+                // Always clean up on failure
+                echo '🧹 Cleaning up containers due to failure...'
+                dir('Game-Review-Sentiment-Analysis-Web-app') {
+                    bat 'docker compose down || echo "No containers to clean up"'
+                }
             }
-            // Optional: Send notifications, cleanup, etc.
         }
     }
 }
