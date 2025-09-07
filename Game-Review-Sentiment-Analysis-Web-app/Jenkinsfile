@@ -193,7 +193,7 @@ pipeline {
                         bat 'docker compose up -d frontend'
                         
                         // Wait a moment for service to start
-                        bat 'timeout /t 15 /nobreak > nul'
+                        // bat 'timeout /t 15 /nobreak > nul'
                         
                         // Check if frontend service is running
                         bat 'docker compose ps'
