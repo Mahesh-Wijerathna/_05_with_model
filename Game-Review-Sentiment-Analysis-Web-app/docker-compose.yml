@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  # backend:
+  #   build: ./game-review-sentiment-backend
+  #   ports:
+  #     - "5000:5000"
+  #   volumes:
+  #     - ./game-review-sentiment-backend:/app
+  # ngrok:
+  #   image: ngrok/ngrok:latest
+  #   ports:
+  #     - "4040:4040"
+  #   environment:
+  #     - NGROK_AUTHTOKEN=32MPylzVFD1zt9hHflx2uD8iN4V_72ZmiBG8r7HqGVDfJA8KG
+  #   command: http host.docker.internal:8080
+  
+
+  hello-world:
+    image: alpine:latest
+    command: echo "Hello World"
+    
+
+    

@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out code...'
+                checkout scm
+            }
+        }
+
+        stage('Hello World Service') {
+            steps {
+                echo 'Running Hello World service...'
+                script {
+                    // Run the hello-world service from docker-compose
+                    sh 'docker-compose run --rm hello-world'
+                }
+            }
+        }        
+    }
+
+    post {
+        always {
+            echo 'Pipeline completed.'
+            // Clean up
+            sh 'docker-compose down || true'
+        }
+        success {
+            echo 'Pipeline succeeded!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+    }
+}
