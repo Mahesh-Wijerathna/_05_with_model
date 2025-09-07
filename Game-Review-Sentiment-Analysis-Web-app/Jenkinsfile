@@ -9,63 +9,31 @@ pipeline {
             }
         }
 
-        stage('Install Docker') {
-            steps {
-                echo 'Installing Docker if not available...'
-                script {
-                    // Check if Docker is already installed
-                    def dockerInstalled = sh(script: 'which docker', returnStatus: true) == 0
-
-                    if (!dockerInstalled) {
-                        echo 'Docker not found. Attempting to install Docker...'
-
-                        // Install Docker (Ubuntu/Debian)
-                        sh '''
-                            # Update package list
-                            sudo apt-get update
-
-                            # Install required packages
-                            sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
-
-                            # Add Docker's official GPG key
-                            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-
-                            # Set up stable repository
-                            echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-                            # Install Docker Engine
-                            sudo apt-get update
-                            sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-
-                            # Start Docker service
-                            sudo systemctl start docker
-                            sudo systemctl enable docker
-
-                            # Add jenkins user to docker group (if jenkins user exists)
-                            sudo usermod -aG docker jenkins || sudo usermod -aG docker $USER || true
-                        '''
-                    } else {
-                        echo 'Docker is already installed.'
-                    }
-                }
-            }
-        }
-
-        stage('Version Check') {
+        stage('Check Docker Version') {
             steps {
                 echo 'Checking Docker and Docker Compose versions...'
-                sh 'docker --version'
-                sh 'docker-compose --version || docker compose version'
+                bat 'docker --version'
+                bat 'docker compose version'
             }
         }
 
-        stage('Hello World Service') {
+        stage('Run Hello World Service') {
             steps {
-                echo 'Running Hello World service..'
+                echo 'Running Hello World service from docker-compose...'
                 script {
                     // Run the hello-world service from docker-compose
-                    sh 'docker-compose run --rm hello-world'
+                    bat 'docker compose run --rm hello-world'
                 }
+            }
+        }
+
+        
+
+        stage('Test Services') {
+            steps {
+                echo 'Running basic service tests...'
+                // Add your test commands here
+                bat 'echo "Add your test commands here"'
             }
         }
     }
@@ -73,14 +41,15 @@ pipeline {
     post {
         always {
             echo 'Pipeline completed.'
-            // Clean up - check if docker-compose is available
-            sh 'which docker-compose && docker-compose down || which docker && docker compose down || echo "Docker Compose not available or no containers to clean up"'
+            // Clean up any running containers
+            bat 'docker compose down || echo "No containers to clean up"'
         }
         success {
             echo 'Pipeline succeeded!'
         }
         failure {
             echo 'Pipeline failed!'
+            // Optional: Send notifications, cleanup, etc.
         }
     }
 }
