@@ -23,8 +23,8 @@ pipeline {
     post {
         always {
             echo 'Pipeline completed.'
-            // Clean up
-            sh 'docker-compose down || true'
+            // Clean up - check if docker-compose is available
+            sh 'which docker-compose && docker-compose down || echo "Docker Compose not available or no containers to clean up"'
         }
         success {
             echo 'Pipeline succeeded!'
