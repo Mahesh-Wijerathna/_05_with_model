@@ -17,23 +17,66 @@ pipeline {
             }
         }
 
-        stage('Run Hello World Service') {
+        stage('Verify Docker Compose File') {
             steps {
-                echo 'Running Hello World service from docker-compose...'
+                echo 'Checking if docker-compose.yml exists...'
                 script {
-                    // Run the hello-world service from docker-compose
-                    bat 'docker compose run --rm hello-world'
+                    dir('Game-Review-Sentiment-Analysis-Web-app') {
+                        if (fileExists('docker-compose.yml')) {
+                            echo '✅ docker-compose.yml found!'
+                            // Read and display basic info about the compose file
+                            def composeContent = readFile 'docker-compose.yml'
+                            echo 'Docker Compose file contents preview:'
+                            // Show first few lines for verification
+                            def lines = composeContent.split('\n')
+                            for (int i = 0; i < Math.min(5, lines.size()); i++) {
+                                echo "  ${lines[i]}"
+                            }
+                        } else {
+                            error '❌ docker-compose.yml not found! Pipeline cannot continue.'
+                        }
+                    }
                 }
             }
         }
 
-        
+        stage('Run Hello World Service') {
+            steps {
+                echo 'Running Hello World service from docker-compose...'
+                script {
+                    // Change to the correct directory containing docker-compose.yml
+                    dir('Game-Review-Sentiment-Analysis-Web-app') {
+                        bat 'docker compose run --rm hello-world'
+                    }
+                }
+            }
+        }
+
+        stage('Build Backend (Optional)') {
+            steps {
+                echo 'Building backend service if uncommented...'
+                script {
+                    // Change to the correct directory
+                    dir('Game-Review-Sentiment-Analysis-Web-app') {
+                        def composeContent = readFile 'docker-compose.yml'
+                        if (composeContent.contains('backend:')) {
+                            bat 'docker compose build backend'
+                        } else {
+                            echo 'Backend service is commented out, skipping build'
+                        }
+                    }
+                }
+            }
+        }
 
         stage('Test Services') {
             steps {
                 echo 'Running basic service tests...'
-                // Add your test commands here
-                bat 'echo "Add your test commands here"'
+                // Change to the correct directory for tests
+                dir('Game-Review-Sentiment-Analysis-Web-app') {
+                    // Add your test commands here
+                    bat 'echo "Add your test commands here"'
+                }
             }
         }
     }
@@ -41,8 +84,10 @@ pipeline {
     post {
         always {
             echo 'Pipeline completed.'
-            // Clean up any running containers
-            bat 'docker compose down || echo "No containers to clean up"'
+            // Clean up any running containers from the correct directory
+            dir('Game-Review-Sentiment-Analysis-Web-app') {
+                bat 'docker compose down || echo "No containers to clean up"'
+            }
         }
         success {
             echo 'Pipeline succeeded!'
