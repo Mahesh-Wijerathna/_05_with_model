@@ -11,7 +11,7 @@ pipeline {
 
         stage('Hello World Service') {
             steps {
-                echo 'Running Hello World service...'
+                echo 'Running Hello World service..'
                 script {
                     // Run the hello-world service from docker-compose
                     sh 'docker-compose run --rm hello-world'
