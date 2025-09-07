@@ -1,16 +1,17 @@
 version: '3.8'
 
 services:
-  backend:
-    build: ./game-review-sentiment-backend
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./game-review-sentiment-backend:/app
-    environment:
-      - FLASK_ENV=development
-    depends_on:
-      - hello-world
+  # Backend service commented out - only deploying frontend
+  # backend:
+  #   build: ./game-review-sentiment-backend
+  #   ports:
+  #     - "5000:5000"
+  #   volumes:
+  #     - ./game-review-sentiment-backend:/app
+  #   environment:
+  #     - FLASK_ENV=development
+  #   depends_on:
+  #     - hello-world
 
   # ngrok:
   #   image: ngrok/ngrok:latest
@@ -34,8 +35,9 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
+    # Removed depends_on backend since backend is commented out
     depends_on:
-      - backend
+      - hello-world
     
 
     

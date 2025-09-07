@@ -65,11 +65,12 @@ pipeline {
                                 echo '❌ Frontend Dockerfile missing!'
                             }
 
-                            if (fileExists('game-review-sentiment-backend/Dockerfile')) {
-                                echo '✅ Backend Dockerfile found!'
-                            } else {
-                                echo '❌ Backend Dockerfile missing!'
-                            }
+                            // Backend Dockerfile check commented out - only deploying frontend
+                            // if (fileExists('game-review-sentiment-backend/Dockerfile')) {
+                            //     echo '✅ Backend Dockerfile found!'
+                            // } else {
+                            //     echo '❌ Backend Dockerfile missing!'
+                            // }
                         } else {
                             error '❌ docker-compose.yml not found! Pipeline cannot continue.'
                         }
@@ -142,55 +143,55 @@ pipeline {
             }
         }
 
-        stage('Build Backend (Optional)') {
-            steps {
-                echo 'Building backend service...'
-                script {
-                    dir('Game-Review-Sentiment-Analysis-Web-app') {
-                        // Retry logic for Docker build to handle network issues
-                        def maxRetries = 3
-                        def retryCount = 0
-                        def buildSuccess = false
+        // stage('Build Backend (Optional)') {
+        //     steps {
+        //         echo 'Building backend service...'
+        //         script {
+        //             dir('Game-Review-Sentiment-Analysis-Web-app') {
+        //                 // Retry logic for Docker build to handle network issues
+        //                 def maxRetries = 3
+        //                 def retryCount = 0
+        //                 def buildSuccess = false
 
-                        while (retryCount < maxRetries && !buildSuccess) {
-                            try {
-                                echo "Attempt ${retryCount + 1} of ${maxRetries} to build backend..."
-                                bat 'docker compose build --no-cache backend'
-                                buildSuccess = true
-                                echo '✅ Backend build successful!'
-                            } catch (Exception e) {
-                                retryCount++
-                                echo "❌ Backend build attempt ${retryCount} failed: ${e.getMessage()}"
+        //                 while (retryCount < maxRetries && !buildSuccess) {
+        //                     try {
+        //                         echo "Attempt ${retryCount + 1} of ${maxRetries} to build backend..."
+        //                         bat 'docker compose build --no-cache backend'
+        //                         buildSuccess = true
+        //                         echo '✅ Backend build successful!'
+        //                     } catch (Exception e) {
+        //                         retryCount++
+        //                         echo "❌ Backend build attempt ${retryCount} failed: ${e.getMessage()}"
 
-                                if (retryCount < maxRetries) {
-                                    echo "⏳ Waiting 30 seconds before retry..."
-                                    bat 'timeout /t 30 /nobreak > nul'
+        //                         if (retryCount < maxRetries) {
+        //                             echo "⏳ Waiting 30 seconds before retry..."
+        //                             bat 'timeout /t 30 /nobreak > nul'
 
-                                    // Clean up any partial builds
-                                    bat 'docker system prune -f || echo "Cleanup failed, continuing..."'
-                                } else {
-                                    echo "❌ All ${maxRetries} attempts failed."
-                                    error "Backend build failed after ${maxRetries} attempts. Last error: ${e.getMessage()}"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        //                             // Clean up any partial builds
+        //                             bat 'docker system prune -f || echo "Cleanup failed, continuing..."'
+        //                         } else {
+        //                             echo "❌ All ${maxRetries} attempts failed."
+        //                             error "Backend build failed after ${maxRetries} attempts. Last error: ${e.getMessage()}"
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
         stage('Test Services') {
             steps {
-                echo 'Running basic service tests...'
+                echo 'Testing frontend service...'
                 script {
                     dir('Game-Review-Sentiment-Analysis-Web-app') {
-                        // Start services in detached mode for testing
-                        bat 'docker compose up -d backend frontend'
+                        // Start frontend service in detached mode for testing
+                        bat 'docker compose up -d frontend'
                         
-                        // Wait a moment for services to start
+                        // Wait a moment for service to start
                         bat 'timeout /t 15 /nobreak > nul'
                         
-                        // Check if services are running
+                        // Check if frontend service is running
                         bat 'docker compose ps'
                         
                         // Test hello-world service
@@ -199,6 +200,51 @@ pipeline {
                         
                         // Stop services after testing
                         bat 'docker compose down'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Frontend Locally') {
+            steps {
+                echo '🚀 Deploying frontend application locally...'
+                script {
+                    dir('Game-Review-Sentiment-Analysis-Web-app') {
+                        // Stop any existing containers
+                        bat 'docker compose down || echo "No existing containers to stop"'
+                        
+                        // Start frontend service in detached mode
+                        bat 'docker compose up -d frontend'
+                        
+                        // Wait for service to be ready
+                        bat 'timeout /t 20 /nobreak > nul'
+                        
+                        // Verify frontend service is running
+                        bat 'docker compose ps'
+                        
+                        echo '✅ Frontend deployed successfully!'
+                        echo '🌐 Frontend: http://localhost:3000'
+                    }
+                }
+            }
+        }
+
+        stage('Verify Frontend Deployment') {
+            steps {
+                echo '🔍 Verifying frontend deployment accessibility...'
+                script {
+                    dir('Game-Review-Sentiment-Analysis-Web-app') {
+                        // Test if frontend port is accessible
+                        echo 'Testing port accessibility...'
+                        
+                        // Check if frontend port is listening
+                        bat 'netstat -an | find "3000" || echo "Port 3000 not found in netstat"'
+                        
+                        // Try to curl the frontend (if curl is available)
+                        bat 'curl -f http://localhost:3000 || echo "Frontend not responding on port 3000"'
+                        
+                        echo '✅ Frontend deployment verification completed!'
+                        echo '🌐 You can now access your frontend at: http://localhost:3000'
                     }
                 }
             }
@@ -215,9 +261,17 @@ pipeline {
         }
         success {
             echo '🎉 Pipeline succeeded!'
-            echo 'Your application is ready. You can run:'
-            echo '  docker compose up -d'
-            echo 'Then visit: http://localhost:3000 (frontend) and http://localhost:5000 (backend)'
+            echo 'Your frontend application is deployed and running locally!'
+            echo ''
+            echo '🌐 Access your frontend application:'
+            echo '   Frontend (React): http://localhost:3000'
+            echo ''
+            echo 'To stop the application:'
+            echo '   cd Game-Review-Sentiment-Analysis-Web-app'
+            echo '   docker compose down'
+            echo ''
+            echo 'To restart:'
+            echo '   docker compose up -d frontend'
         }
         failure {
             echo '❌ Pipeline failed!'
