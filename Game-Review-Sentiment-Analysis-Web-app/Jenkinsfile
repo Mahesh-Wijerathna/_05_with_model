@@ -17,6 +17,31 @@ pipeline {
             }
         }
 
+        stage('Check Docker Connectivity') {
+            steps {
+                echo 'Checking Docker Hub connectivity...'
+                script {
+                    try {
+                        bat 'docker pull hello-world'
+                        echo '✅ Docker Hub connectivity is working!'
+                    } catch (Exception e) {
+                        echo "⚠️  Docker Hub connectivity issue detected: ${e.getMessage()}"
+                        echo 'This might cause build failures. Checking alternative approaches...'
+
+                        // Try to check if images are already cached locally
+                        bat 'docker images || echo "Cannot check local images"'
+
+                        // Suggest solutions
+                        echo 'Possible solutions:'
+                        echo '1. Check your internet connection'
+                        echo '2. Try using a different Docker registry mirror'
+                        echo '3. Use locally cached images if available'
+                        echo '4. Check firewall/proxy settings'
+                    }
+                }
+            }
+        }
+
         stage('Verify Docker Compose File') {
             steps {
                 echo 'Checking if docker-compose.yml exists...'
@@ -31,6 +56,19 @@ pipeline {
                             def lines = composeContent.split('\n')
                             for (int i = 0; i < Math.min(5, lines.size()); i++) {
                                 echo "  ${lines[i]}"
+                            }
+
+                            // Check if Dockerfiles exist
+                            if (fileExists('game-review-sentiment/Dockerfile')) {
+                                echo '✅ Frontend Dockerfile found!'
+                            } else {
+                                echo '❌ Frontend Dockerfile missing!'
+                            }
+
+                            if (fileExists('game-review-sentiment-backend/Dockerfile')) {
+                                echo '✅ Backend Dockerfile found!'
+                            } else {
+                                echo '❌ Backend Dockerfile missing!'
                             }
                         } else {
                             error '❌ docker-compose.yml not found! Pipeline cannot continue.'
@@ -57,7 +95,36 @@ pipeline {
                 echo 'Building frontend service...'
                 script {
                     dir('Game-Review-Sentiment-Analysis-Web-app') {
-                        bat 'docker compose build frontend'
+                        // Retry logic for Docker build to handle network issues
+                        def maxRetries = 3
+                        def retryCount = 0
+                        def buildSuccess = false
+
+                        while (retryCount < maxRetries && !buildSuccess) {
+                            try {
+                                echo "Attempt ${retryCount + 1} of ${maxRetries} to build frontend..."
+                                bat 'docker compose build --no-cache frontend'
+                                buildSuccess = true
+                                echo '✅ Frontend build successful!'
+                            } catch (Exception e) {
+                                retryCount++
+                                echo "❌ Frontend build attempt ${retryCount} failed: ${e.getMessage()}"
+
+                                if (retryCount < maxRetries) {
+                                    echo "⏳ Waiting 30 seconds before retry..."
+                                    bat 'timeout /t 30 /nobreak > nul'
+
+                                    // Clean up any partial builds
+                                    bat 'docker system prune -f || echo "Cleanup failed, continuing..."'
+                                } else {
+                                    echo "❌ All ${maxRetries} attempts failed. Checking Docker connectivity..."
+                                    // Try to diagnose the issue
+                                    bat 'docker info || echo "Docker info failed"'
+                                    bat 'docker pull hello-world || echo "Cannot reach Docker Hub"'
+                                    error "Frontend build failed after ${maxRetries} attempts. Last error: ${e.getMessage()}"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -79,9 +146,34 @@ pipeline {
             steps {
                 echo 'Building backend service...'
                 script {
-                    // Change to the correct directory
                     dir('Game-Review-Sentiment-Analysis-Web-app') {
-                        bat 'docker compose build backend'
+                        // Retry logic for Docker build to handle network issues
+                        def maxRetries = 3
+                        def retryCount = 0
+                        def buildSuccess = false
+
+                        while (retryCount < maxRetries && !buildSuccess) {
+                            try {
+                                echo "Attempt ${retryCount + 1} of ${maxRetries} to build backend..."
+                                bat 'docker compose build --no-cache backend'
+                                buildSuccess = true
+                                echo '✅ Backend build successful!'
+                            } catch (Exception e) {
+                                retryCount++
+                                echo "❌ Backend build attempt ${retryCount} failed: ${e.getMessage()}"
+
+                                if (retryCount < maxRetries) {
+                                    echo "⏳ Waiting 30 seconds before retry..."
+                                    bat 'timeout /t 30 /nobreak > nul'
+
+                                    // Clean up any partial builds
+                                    bat 'docker system prune -f || echo "Cleanup failed, continuing..."'
+                                } else {
+                                    echo "❌ All ${maxRetries} attempts failed."
+                                    error "Backend build failed after ${maxRetries} attempts. Last error: ${e.getMessage()}"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -122,10 +214,25 @@ pipeline {
             }
         }
         success {
-            echo 'Pipeline succeeded!'
+            echo '🎉 Pipeline succeeded!'
+            echo 'Your application is ready. You can run:'
+            echo '  docker compose up -d'
+            echo 'Then visit: http://localhost:3000 (frontend) and http://localhost:5000 (backend)'
         }
         failure {
-            echo 'Pipeline failed!'
+            echo '❌ Pipeline failed!'
+            script {
+                def failureCause = currentBuild.getResult()
+                if (failureCause == 'FAILURE') {
+                    echo '🔍 Troubleshooting tips for TLS timeout issues:'
+                    echo '1. Check your internet connection'
+                    echo '2. Try restarting Docker Desktop'
+                    echo '3. Check firewall/proxy settings'
+                    echo '4. Try using a VPN if network is restricted'
+                    echo '5. Consider using a different Docker registry mirror'
+                    echo '6. Check if Docker Hub is accessible: ping registry-1.docker.io'
+                }
+            }
             // Optional: Send notifications, cleanup, etc.
         }
     }
