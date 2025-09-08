@@ -33,7 +33,7 @@ jobs:
         fi
         if [ ! -f "./Game-Review-Sentiment-Analysis-Web-app/game-review-sentiment-backend/Dockerfile" ]; then
           echo "❌ Backend Dockerfile not found!"
-          exit 1
+          exit 1 
         fi
         echo "✅ All Dockerfiles found!"
 
