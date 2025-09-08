@@ -39,6 +39,8 @@ jobs:
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
+      with:
+        driver: docker-container
 
     - name: Log in to Container Registry
       uses: docker/login-action@v3
@@ -65,6 +67,8 @@ jobs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}-frontend
         labels: ${{ steps.meta.outputs.labels }}
+        cache-from: ""
+        cache-to: ""
 
     - name: Build and push Backend Docker image
       uses: docker/build-push-action@v5
@@ -73,6 +77,8 @@ jobs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}-backend
         labels: ${{ steps.meta.outputs.labels }}
+        cache-from: ""
+        cache-to: ""
 
     - name: Generate deployment info
       run: |
