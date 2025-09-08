@@ -21,16 +21,16 @@ kubectl apply -f k8s/
 
 # Wait for deployments to be ready
 echo "⏳ Waiting for deployments to be ready..."
-kubectl wait --for=condition=available --timeout=300s deployment/frontend -n game-review-app
-kubectl wait --for=condition=available --timeout=300s deployment/backend -n game-review-app
+kubectl wait --for=condition=available --timeout=300s deployment/frontend -n game-review-app || echo "Frontend deployment timeout"
+kubectl wait --for=condition=available --timeout=300s deployment/backend -n game-review-app || echo "Backend deployment timeout"
 
 # Get service URLs
 MINIKUBE_IP=$(minikube ip)
-FRONTEND_PORT=$(kubectl get svc frontend -n game-review-app -o jsonpath='{.spec.ports[0].nodePort}')
-BACKEND_PORT=$(kubectl get svc backend -n game-review-app -o jsonpath='{.spec.ports[0].nodePort}')
+FRONTEND_PORT=$(kubectl get svc frontend -n game-review-app -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "30001")
+BACKEND_PORT=$(kubectl get svc backend -n game-review-app -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "30002")
 
 echo ""
-echo "🎉 Deployment completed successfully!"
+echo "🎉 Deployment completed!"
 echo ""
 echo "🌐 Access your application:"
 echo "   Frontend: http://$MINIKUBE_IP:$FRONTEND_PORT"

@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: ghcr.io/mahesh-wijerathna/_05_with_model:latest-frontend
+        image: ghcr.io/mahesh-wijerathna/_05_with_model:main-frontend
         ports:
         - containerPort: 3000
         env:

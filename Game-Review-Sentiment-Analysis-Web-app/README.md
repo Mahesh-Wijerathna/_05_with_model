@@ -2,71 +2,27 @@
 
 A full-stack application for analyzing game review sentiments using React frontend and Flask backend with BERT model.
 
-## 🚀 Deployment Overview
+## 🚀 Quick Start
 
-This project uses GitHub Actions for CI/CD with local Minikube deployment:
+### **1. Automatic CI/CD (GitHub Actions)**
+Push to `main` branch → Images build automatically → Available in GHCR
 
-1. **Push to GitHub** → Triggers GitHub Actions
-2. **Build Docker Images** → Frontend & Backend
-3. **Push to GHCR** → GitHub Container Registry
-4. **Deploy to Minikube** → Local Kubernetes cluster
-
-## 📋 Prerequisites
-
-- [Docker](https://docker.com) installed
-- [Minikube](https://minikube.sigs.k8s.io/docs/start/) installed
-- [kubectl](https://kubernetes.io/docs/tasks/tools/) installed
-- GitHub repository with Actions enabled
-
-## 🏗️ Project Structure
-
-```
-Game-Review-Sentiment-Analysis-Web-app/
-├── game-review-sentiment/          # React frontend
-│   ├── Dockerfile
-│   ├── package.json
-│   └── src/
-├── game-review-sentiment-backend/  # Flask backend
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   └── app.py
-├── k8s/                           # Kubernetes manifests
-│   ├── namespace.yml
-│   ├── frontend-deployment.yml
-│   ├── frontend-service.yml
-│   ├── backend-deployment.yml
-│   └── backend-service.yml
-├── .github/workflows/
-│   └── build-and-deploy.yml       # GitHub Actions workflow
-├── docker-compose.yml
-├── Jenkinsfile                    # Alternative Jenkins pipeline
-└── deploy-local.sh               # Local deployment script
-```
-
-## 🔄 GitHub Actions Workflow
-
-### Automatic Deployment (on push to main)
-
-The workflow automatically:
-1. Builds Docker images for frontend and backend
-2. Pushes images to GitHub Container Registry (GHCR)
-3. Deploys to Minikube (if running locally)
-
-### Manual Local Deployment
-
+### **2. Local Deployment**
 ```bash
+# Make scripts executable
+chmod +x deploy-local.sh test-images.sh
+
 # Start Minikube
 minikube start
 
-# Run deployment script
-chmod +x deploy-local.sh
+# Deploy to Kubernetes
 ./deploy-local.sh
+
+# Test images locally (optional)
+./test-images.sh
 ```
 
-## 🌐 Access Your Application
-
-After deployment, access your application at:
-
+### **3. Access Your Application**
 - **Frontend**: `http://$(minikube ip):30001`
 - **Backend**: `http://$(minikube ip):30002`
 

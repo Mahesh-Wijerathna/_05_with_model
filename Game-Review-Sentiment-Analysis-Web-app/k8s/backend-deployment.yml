@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: ghcr.io/mahesh-wijerathna/_05_with_model:latest-backend
+        image: ghcr.io/mahesh-wijerathna/_05_with_model:main-backend
         ports:
         - containerPort: 5000
         env:
