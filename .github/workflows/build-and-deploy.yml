@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: mahesh-wijerathna/_05_with_model
+  IMAGE_NAME: mahesh-wijerathna/game-review-sentiment-app
 
 jobs:
   build-and-push:
@@ -55,9 +55,8 @@ jobs:
       with:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
+          type=raw,value=latest
+          type=sha,prefix=sha-
           type=raw,value=latest,enable={{is_default_branch}}
 
     - name: Build and push Frontend Docker image
